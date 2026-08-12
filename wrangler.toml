@@ -26,7 +26,7 @@ fallthrough = true
 # id in automatically.
 [[hyperdrive]]
 binding = "POSTGRES"
-id = "REPLACE_WITH_YOUR_HYPERDRIVE_ID"
+id = "89294c808cd144ad897856d35f262e50"
 
 # R2 bucket for blob storage (file uploads).
 # Create one with: wrangler r2 bucket create feedlog
