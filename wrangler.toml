@@ -1,4 +1,4 @@
-name = "feedlog"
+name = "dbb-feedback"
 compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
 
