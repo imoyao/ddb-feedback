@@ -40,6 +40,7 @@ bucket_name = "feedlog"
 # the Deploy Button form (backed by .dev.vars.example), NOT declared here.
 [vars]
 BETTER_AUTH_URL = "https://feedback.duoduobei.com"
+EMAIL_FROM = "noreply@duoduobei.com"
 # GOOGLE_CLIENT_ID = "your-google-oauth-client-id.apps.googleusercontent.com"
 
 # Secrets to configure via `wrangler secret put` (manual-deploy path):
@@ -47,6 +48,10 @@ BETTER_AUTH_URL = "https://feedback.duoduobei.com"
 #   wrangler secret put SYSTEM_ADMIN_EMAILS      # e.g. you@example.com
 #   wrangler secret put GOOGLE_CLIENT_SECRET     # if enabling Google OAuth
 #   wrangler secret put OPENAI_API_KEY           # if enabling AI features
+#
+# NOTE: EMAIL_FROM is declared above as a fallback only. The authoritative
+# value is set via `wrangler secret put EMAIL_FROM` (a real secret on Cloudflare)
+# and overrides this var. Keep both in sync; the secret wins.
 
 [observability]
 [observability.logs]
