@@ -11,7 +11,7 @@ function layout({ preheader, content }: { preheader: string; content: string }):
 <div style="font-family: ${FONT_STACK}; max-width: 600px; margin: 0 auto; padding: 32px 24px; color: #111827; line-height: 1.55;">
   <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${preheader}</div>
   <div style="padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px;">
-    <span style="font-size: 20px; font-weight: 700; color: ${BRAND_COLOR}; letter-spacing: -0.01em;">FeedLog</span>
+    <span style="font-size: 20px; font-weight: 700; color: ${BRAND_COLOR}; letter-spacing: -0.01em;">多多贝</span>
   </div>
   ${content}
   ${signature()}
@@ -26,7 +26,7 @@ function actionButton(url: string, label: string): string {
 function fallbackLink(url: string): string {
   const shown = url.length <= 80 ? url : `${url.slice(0, 80)}...`
   return `
-<p style="color: #6b7280; margin: 24px 0 4px; font-size: 13px;">Button not working? Paste this link into your browser:</p>
+<p style="color: #6b7280; margin: 24px 0 4px; font-size: 13px;">按钮无法点击？请将下方链接复制到浏览器打开：</p>
 <p style="margin: 0 0 24px; font-size: 12px; word-break: break-all;">
   <a href="${url}" style="color: ${BRAND_COLOR}; text-decoration: underline;">${shown}</a>
 </p>
@@ -40,10 +40,10 @@ function expiryNote(text: string): string {
 function signature(): string {
   return `
 <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; color: #6b7280; font-size: 13px;">
-  &mdash; The FeedLog Team<br>
-  <a href="https://feedlog.ai" style="color: #6b7280; text-decoration: underline;">feedlog.ai</a>
+  &mdash; 多多贝团队<br>
+  <a href="https://duoduobei.com" style="color: #6b7280; text-decoration: underline;">duoduobei.com</a>
   &middot;
-  <a href="mailto:feedlog.oss@outlook.com" style="color: #6b7280; text-decoration: underline;">feedlog.oss@outlook.com</a>
+  <a href="mailto:feedback@duoduobei.com" style="color: #6b7280; text-decoration: underline;">feedback@duoduobei.com</a>
 </div>
 `
 }
@@ -52,68 +52,68 @@ function signature(): string {
 
 export function renderVerificationEmail({ url, name }: { url: string; name: string }): string {
   return layout({
-    preheader: 'One click to activate · link expires in 1 hour.',
+    preheader: '一键激活 · 链接 1 小时内有效。',
     content: `
-<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">Confirm your email to get started</h2>
-<p style="margin: 0 0 12px;">Hi ${escapeHtml(name)},</p>
-<p style="margin: 0 0 12px;">Confirm your email to activate your FeedLog account and start:</p>
+<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">确认邮箱，开始使用</h2>
+<p style="margin: 0 0 12px;">你好 ${escapeHtml(name)}，</p>
+<p style="margin: 0 0 12px;">确认邮箱以激活你的多多贝账户，即可开始：</p>
 <ul style="margin: 0 0 24px; padding-left: 20px; color: #374151;">
-  <li style="margin-bottom: 4px;">Voting on features you care about</li>
-  <li style="margin-bottom: 4px;">Submitting feedback and ideas</li>
-  <li>Following updates on what ships next</li>
+  <li style="margin-bottom: 4px;">为你关心的功能投票</li>
+  <li style="margin-bottom: 4px;">提交反馈与想法</li>
+  <li>关注即将上线的更新</li>
 </ul>
-${actionButton(url, 'Confirm Email')}
+${actionButton(url, '确认邮箱')}
 ${fallbackLink(url)}
-${expiryNote('This link expires in 1 hour. If you didn\'t sign up for FeedLog, you can safely ignore this email.')}
+${expiryNote('此链接 1 小时内有效。如果你并未注册多多贝，请忽略此邮件。')}
 `,
   })
 }
 
 export function renderInvitationEmail({ url, orgName }: { url: string; orgName: string }): string {
   return layout({
-    preheader: `You're invited to join ${escapeHtml(orgName)} on FeedLog.`,
+    preheader: `你被邀请加入 ${escapeHtml(orgName)}（多多贝）。`,
     content: `
-<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">Join ${escapeHtml(orgName)} on FeedLog</h2>
-<p style="margin: 0 0 12px;">You've been invited to collaborate. Click below to accept and get started:</p>
-${actionButton(url, 'Accept invitation')}
+<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">加入 ${escapeHtml(orgName)}（多多贝）</h2>
+<p style="margin: 0 0 12px;">你被邀请协作。点击下方按钮接受邀请并开始：</p>
+${actionButton(url, '接受邀请')}
 ${fallbackLink(url)}
-${expiryNote('This invitation link is tied to your email. If you weren\'t expecting it, you can safely ignore this message.')}
+${expiryNote('此邀请链接与你的邮箱绑定。如果你并未期待此邀请，请忽略此邮件。')}
 `,
   })
 }
 
 export function renderResetPasswordEmail({ url, name }: { url: string; name: string }): string {
   return layout({
-    preheader: 'A password reset was requested for your account. If it wasn\'t you, ignore this email.',
+    preheader: '我们收到了你的账户密码重置请求。若非本人操作，请忽略此邮件。',
     content: `
-<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">Reset your password</h2>
-<p style="margin: 0 0 12px;">Hi ${escapeHtml(name)},</p>
-<p style="margin: 0 0 24px;">Someone requested a password reset for your FeedLog account. If this was you, click the button below to set a new password:</p>
-${actionButton(url, 'Reset Password')}
+<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">重置密码</h2>
+<p style="margin: 0 0 12px;">你好 ${escapeHtml(name)}，</p>
+<p style="margin: 0 0 24px;">有人请求重置你的多多贝账户密码。如果是你本人操作，请点击下方按钮设置新密码：</p>
+${actionButton(url, '重置密码')}
 ${fallbackLink(url)}
-${expiryNote('This link expires in 1 hour and can only be used once.')}
+${expiryNote('此链接 1 小时内有效，且仅可使用一次。')}
 <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-bottom: 24px;">
-  <p style="margin: 0 0 12px; font-weight: 600; color: #111827;">Didn't request this?</p>
-  <p style="margin: 0 0 12px; color: #374151;">You can safely ignore this email &mdash; your password won't change unless you click the link above.</p>
+  <p style="margin: 0 0 12px; font-weight: 600; color: #111827;">没有请求重置？</p>
+  <p style="margin: 0 0 12px; color: #374151;">你可以安全地忽略此邮件 &mdash; 除非点击上方链接，否则你的密码不会改变。</p>
 </div>
 `,
   })
 }
 
 export function renderPasswordSetEmail({ name }: { name: string }): string {
-  const contact = `<a href="mailto:feedlog.oss@outlook.com" style="color: ${BRAND_COLOR}; text-decoration: underline;">feedlog.oss@outlook.com</a>`
+  const contact = `<a href="mailto:feedback@duoduobei.com" style="color: ${BRAND_COLOR}; text-decoration: underline;">feedback@duoduobei.com</a>`
   return layout({
-    preheader: 'If this wasn\'t you, reset your password immediately.',
+    preheader: '若非本人操作，请立即重置密码。',
     content: `
-<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">A password was added to your account</h2>
-<p style="margin: 0 0 16px;">Hi ${escapeHtml(name)},</p>
-<p style="margin: 0 0 16px;">A password was just added to your FeedLog account. You can now sign in with email and password in addition to your social login.</p>
-<p style="margin: 0 0 24px; color: #374151;">If this wasn't you, reset your password right away and contact ${contact}.</p>
+<h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600;">你的账户已添加密码</h2>
+<p style="margin: 0 0 16px;">你好 ${escapeHtml(name)}，</p>
+<p style="margin: 0 0 16px;">你的多多贝账户刚刚添加了密码。现在除了社交登录，你也可以使用邮箱和密码登录。</p>
+<p style="margin: 0 0 24px; color: #374151;">若非本人操作，请立即重置密码并联系 ${contact}。</p>
 `,
   })
 }
 
-// --- Notification templates (English only, Featurebase-style) ---
+// --- Notification templates (中文，Featurebase 风格) ---
 
 // User-authored text (titles, notes, comment snippets) enters the HTML body
 // here, so every interpolation is escaped.
@@ -127,10 +127,10 @@ export interface NotificationEmailContent {
   text: string
 }
 
-const FOOTER_REASON = 'You\'re receiving this because of your activity on this FeedLog board.'
-const ADMIN_FOOTER_REASON = 'You\'re receiving this because you manage this FeedLog board.'
+const FOOTER_REASON = '你收到此邮件是因为你在多多贝看板上的活动。'
+const ADMIN_FOOTER_REASON = '你收到此邮件是因为你管理着多多贝看板。'
 
-// Gray page → centered FeedLog wordmark → white rounded card → centered footer.
+// Gray page → centered 多多贝 wordmark → white rounded card → centered footer.
 // No links in the footer; the physical postal address (CAN-SPAM) is a pre-launch
 // item, not fabricated here.
 function notificationShell(cardInner: string, preheader: string, footerReason: string): string {
@@ -139,7 +139,7 @@ function notificationShell(cardInner: string, preheader: string, footerReason: s
   <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${escapeHtml(preheader)}</div>
   <div style="max-width: 560px; margin: 0 auto;">
     <div style="text-align: center; padding-bottom: 28px;">
-      <span style="font-size: 22px; font-weight: 800; color: {{brand}}; letter-spacing: -0.02em;">FeedLog</span>
+      <span style="font-size: 22px; font-weight: 800; color: {{brand}}; letter-spacing: -0.02em;">多多贝</span>
     </div>
     <div style="background: #fff; border: 1px solid #eceef3; border-radius: 16px; padding: 40px 36px;">
 ${cardInner}
@@ -163,13 +163,13 @@ function statusChangeCard(title: string, to: string, note?: string): Notificatio
     : ''
   const inner = `
       <p style="margin: 0; text-align: center; font-size: 20px; line-height: 1.5; color: #1f2937;">
-        A post you upvoted, <strong style="color: #111827;">${escapeHtml(title)}</strong>, has been changed to <span style="color: ${cfg.color}; font-weight: 700;">${label}</span>
+        你点赞的帖子 <strong style="color: #111827;">${escapeHtml(title)}</strong> 状态已变更为 <span style="color: ${cfg.color}; font-weight: 700;">${label}</span>
       </p>${noteHtml}
-      ${pillButton('{{postUrl}}', 'View post')}`
+      ${pillButton('{{postUrl}}', '查看帖子')}`
   return {
-    subject: `${label} - "${title}"`,
+    subject: `${label} - 「${title}」`,
     html: inner,
-    text: `A post you upvoted, ${title}, has been changed to ${label}.${note ? `\n\n${note}` : ''}`,
+    text: `你点赞的帖子「${title}」状态已变更为 ${label}。${note ? `\n\n${note}` : ''}`,
   }
 }
 
@@ -194,25 +194,25 @@ function personCard(title: string, actorName: string, actorImage: string | null 
 
 function adminReplyCard(title: string, actorName: string, actorImage: string | null | undefined, snippet: string): NotificationEmailContent {
   return {
-    subject: `New comment for "${title}"`,
-    html: personCard(title, actorName, actorImage, snippet, 'View comment'),
-    text: `${actorName} commented on "${title}":\n\n${snippet}`,
+    subject: `「${title}」收到官方回复`,
+    html: personCard(title, actorName, actorImage, snippet, '查看回复'),
+    text: `${actorName} 在「${title}」中回复：\n\n${snippet}`,
   }
 }
 
 function newFeedbackCard(title: string, actorName: string, actorImage: string | null | undefined, snippet: string): NotificationEmailContent {
   return {
-    subject: `New feedback: "${title}"`,
-    html: personCard(title, actorName, actorImage, snippet, 'View feedback'),
-    text: `${actorName} submitted new feedback, "${title}":\n\n${snippet}`,
+    subject: `新反馈：「${title}」`,
+    html: personCard(title, actorName, actorImage, snippet, '查看反馈'),
+    text: `${actorName} 提交了新反馈「${title}」：\n\n${snippet}`,
   }
 }
 
 function userCommentCard(title: string, actorName: string, actorImage: string | null | undefined, snippet: string): NotificationEmailContent {
   return {
-    subject: `New reply on "${title}"`,
-    html: personCard(title, actorName, actorImage, snippet, 'View comment'),
-    text: `${actorName} replied on "${title}":\n\n${snippet}`,
+    subject: `「${title}」有新回复`,
+    html: personCard(title, actorName, actorImage, snippet, '查看回复'),
+    text: `${actorName} 在「${title}」中回复：\n\n${snippet}`,
   }
 }
 
@@ -229,7 +229,7 @@ export function renderNotificationEmail(input: {
   actorImage?: string | null
   brandColor?: string
 }): NotificationEmailContent | null {
-  const title = input.postTitle || 'your post'
+  const title = input.postTitle || '你的帖子'
   let card: NotificationEmailContent | null = null
   let preheader = ''
   let footerReason = FOOTER_REASON
@@ -238,21 +238,21 @@ export function renderNotificationEmail(input: {
     case 'post.status_changed': {
       const label = (STATUS_CONFIG[(input.to ?? 'open') as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.open).label
       card = statusChangeCard(title, input.to ?? 'open', input.note)
-      preheader = `"${title}" is now ${label}.`
+      preheader = `「${title}」现已${label}。`
       break
     }
     case 'post.admin_replied':
-      card = adminReplyCard(title, input.actorName ?? 'The team', input.actorImage, input.snippet ?? '')
-      preheader = `An official reply on "${title}".`
+      card = adminReplyCard(title, input.actorName ?? '官方团队', input.actorImage, input.snippet ?? '')
+      preheader = `「${title}」收到官方回复。`
       break
     case 'post.created':
-      card = newFeedbackCard(title, input.actorName ?? 'Someone', input.actorImage, input.snippet ?? '')
-      preheader = `New feedback on your board: "${title}".`
+      card = newFeedbackCard(title, input.actorName ?? '有人', input.actorImage, input.snippet ?? '')
+      preheader = `你的看板收到新反馈：「${title}」。`
       footerReason = ADMIN_FOOTER_REASON
       break
     case 'post.user_commented':
-      card = userCommentCard(title, input.actorName ?? 'Someone', input.actorImage, input.snippet ?? '')
-      preheader = `A new reply on "${title}".`
+      card = userCommentCard(title, input.actorName ?? '有人', input.actorImage, input.snippet ?? '')
+      preheader = `「${title}」收到新回复。`
       footerReason = ADMIN_FOOTER_REASON
       break
     default:
@@ -263,6 +263,6 @@ export function renderNotificationEmail(input: {
   const html = notificationShell(card.html.replaceAll('{{postUrl}}', input.postUrl), preheader, footerReason)
     .replaceAll('{{brand}}', brand)
     .replaceAll('{{brandFg}}', pickBrandForegroundHex(brand))
-  const text = `${card.text}\n\nView: ${input.postUrl}\n\n—\n${footerReason}`
+  const text = `${card.text}\n\n查看：${input.postUrl}\n\n—\n${footerReason}`
   return { subject: card.subject, html, text }
 }
