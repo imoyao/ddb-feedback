@@ -20,7 +20,7 @@
 // standalone Nitro plugin rather than patching the upstream files. `git merge
 // upstream/main` will not conflict with this file as long as upstream does not
 // add a same-named plugin. Tracked upstream via issue:
-// https://github.com/linkcraftstudio/feedlog/issues/18 (cf-env-bridge fix).
+// https://github.com/linkcraftstudio/feedlog/issues (see cf-env-bridge fix).
 //
 // == BEHAVIOR ==
 // Copies the per-request env onto globalThis.__env__ on each request so the
