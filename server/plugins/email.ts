@@ -2,7 +2,7 @@ import { consola } from 'consola'
 
 const logger = consola.withTag('email')
 
-const FROM_DISPLAY_NAME = '多多贝'
+const FROM_DISPLAY_NAME = 'Duoduobei'
 const FALLBACK_FROM_ADDRESS = 'onboarding@resend.dev'
 
 export default defineNitroPlugin(() => {
