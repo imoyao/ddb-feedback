@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
   }
   await sendEmail({
     to: row.email,
-    subject: `You're invited to join ${row.orgName} on FeedLog`,
+    subject: `你被邀请加入 ${row.orgName}`,
     html: renderInvitationEmail({ url, orgName: row.orgName }),
   })
   return { sent: true }

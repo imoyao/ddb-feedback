@@ -145,7 +145,7 @@ export function buildAuthConfig(overrides: AuthConfigOverrides = {}): BetterAuth
     const url = `${baseUrl}/invite?id=${data.id}`
     await sendEmail({
       to: data.email,
-      subject: `You're invited to join ${data.organization.name} on FeedLog`,
+      subject: `你被邀请加入 ${data.organization.name}`,
       html: renderInvitationEmail({ url, orgName: data.organization.name }),
     })
   }
