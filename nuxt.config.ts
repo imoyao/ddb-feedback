@@ -95,6 +95,7 @@ export default defineNuxtConfig({
   i18n: {
     strategy: 'prefix_except_default',
     defaultLocale: 'en',
+    baseUrl: 'https://feedback.duoduobei.com',
     vueI18n: 'i18n.config.ts',
     detectBrowserLanguage: {
       useCookie: true,

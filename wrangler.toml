@@ -39,7 +39,7 @@ bucket_name = "feedlog"
 # OPENAI_API_KEY, etc.) must be set via `wrangler secret put <NAME>` or via
 # the Deploy Button form (backed by .dev.vars.example), NOT declared here.
 [vars]
-BETTER_AUTH_URL = "https://dbb-feedback.imoyao.workers.dev"
+BETTER_AUTH_URL = "https://feedback.duoduobei.com"
 # GOOGLE_CLIENT_ID = "your-google-oauth-client-id.apps.googleusercontent.com"
 
 # Secrets to configure via `wrangler secret put` (manual-deploy path):
