@@ -92,3 +92,18 @@ Nuxt 4 `shared/` directory (importable from both frontend and backend):
 - Run `pnpm install` before adding components (`.nuxt` directory must exist for path alias resolution)
 - `~~/` alias points to project root (for server-side imports like `~~/server/db`, `~~/lib/auth`)
 - `@/` or `~/` alias points to `app/` directory (for frontend imports)
+
+## Upstream Sync (feedlog fork)
+
+This repo (`imoyao/ddb-feedback`) is a **fork of `linkcraftstudio/feedlog`** with custom DDDB-feedback modifications. We keep our customizations while periodically pulling upstream updates.
+
+- The job lives at `.github/workflows/sync-upstream.yml` (NOT in the `fundmate` repo). It runs on a weekly schedule and can be triggered manually via `workflow_dispatch`.
+- It fetches `upstream/main` and performs a plain `git merge upstream/main --no-edit`, then pushes to `origin/main`.
+
+**Hard constraints for any AI/agent editing this workflow:**
+
+- **Never use `--strategy-option theirs`** (a.k.a. `-X theirs`). That flag silently overwrites local DDDB customizations with upstream content on conflict, defeating the whole point of keeping our fork customizations. Conflicts must be surfaced, not auto-resolved in upstream's favor.
+- On merge conflict, the workflow must **abort the merge and open an Issue** listing the conflicting files (`steps.merge.outputs.conflict_files`), leaving resolution to a human. It must never auto-commit a conflict resolution.
+- **No dead-code options.** Do not add a `rebase` choice (or any strategy not actually implemented) to `workflow_dispatch`; a previous version had an unimplemented `rebase` branch that falsely reported success.
+- Capture the conflict file list **before** `git merge --abort`, since the abort clears conflict markers and `git diff --diff-filter=U` would then return empty.
+- Use a stable `actions/checkout` version (currently `@v4`), not an unreleased major (e.g. `@v5`).
