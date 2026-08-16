@@ -1,0 +1,122 @@
+# dbb-feedback 上游同步工作流
+# 用途：定期从 linkcraftstudio/feedlog 拉取最新代码，保持 fork 与上游同步
+# 存放位置：imoyao/dbb-feedback/.github/workflows/sync-upstream.yml
+
+name: Sync Upstream
+
+on:
+  schedule:
+    # 每周日 03:00 UTC 自动同步（对应北京时间 11:00）
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: '合并策略（merge / rebase）'
+        required: false
+        default: 'merge'
+        type: choice
+        options:
+          - merge
+          - rebase
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # 避免旧运行与新运行冲突
+    concurrency:
+      group: sync-upstream-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # 需要完整历史以支持 rebase
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: 配置上游远程仓库
+        run: |
+          git remote add upstream https://github.com/linkcraftstudio/feedlog.git
+          git fetch upstream main --no-tags
+
+      - name: 检查是否有更新
+        id: check
+        run: |
+          UPSTREAM_SHA=$(git rev-parse upstream/main)
+          LOCAL_SHA=$(git rev-parse HEAD)
+
+          echo "upstream=$UPSTREAM_SHA" >> $GITHUB_OUTPUT
+          echo "local=$LOCAL_SHA" >> $GITHUB_OUTPUT
+
+          if [ "$UPSTREAM_SHA" = "$LOCAL_SHA" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✅ 已是最新，无需同步"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📥 上游有更新: $LOCAL_SHA → $UPSTREAM_SHA"
+          fi
+
+      - name: 执行合并（merge 策略）
+        if: steps.check.outputs.changed == 'true' && (inputs.strategy == 'merge' || github.event_name == 'schedule')
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # git merge 返回非零时，set -e 不会立即退出（因为有 ||）
+          # 但 echo "conflict=true" 需要正确的 GITHUB_OUTPUT 格式
+          if ! git merge upstream/main --no-edit --strategy-option theirs 2>&1; then
+            echo "has_conflict=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ 合并冲突，稍后将自动创建 Issue"
+          else
+            echo "has_conflict=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 输出冲突信息
+        if: steps.merge.outputs.has_conflict == 'true'
+        run: |
+          echo "⚠️ 上游合并有冲突文件："
+          git diff --name-only --diff-filter=U
+          echo "请手动解决冲突后执行: git add . && git merge --continue"
+
+      - name: 推送更新
+        if: steps.check.outputs.changed == 'true' && steps.merge.outputs.has_conflict != 'true'
+        run: |
+          git push origin main
+          echo "✅ 已同步上游更新并推送到 origin/main"
+
+      - name: 冲突时获取文件列表
+        if: steps.merge.outputs.has_conflict == 'true'
+        id: conflicts
+        run: |
+          FILES=$(git diff --name-only --diff-filter=U | tr '\n' ', ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: 冲突时自动创建 Issue
+        if: steps.merge.outputs.has_conflict == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const conflictFiles = '${{ steps.conflicts.outputs.files }}';
+            const body = `## ⚠️ 上游 (linkcraftstudio/feedlog) 合并冲突
+
+            以下文件存在冲突，需要手动解决：
+
+            ${conflictFiles}
+
+            ### 解决步骤
+
+            1. \`git checkout main && git pull\`
+            2. 手动解决上述文件的冲突标记
+            3. \`git add . && git merge --continue\`
+            4. \`git push origin main\`
+
+            > 由 Sync Upstream workflow 自动创建`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔀 上游 feedlog 合并冲突 - 需手动解决',
+              body: body,
+              labels: ['upstream', 'conflict']
+            });
