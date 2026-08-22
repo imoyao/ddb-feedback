@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, isNull, isNotNull } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import { post, postSearch, user } from '#layers/feedlog/server/db/schemas'
 
 // GET /api/admin/posts/search — Admin feedback search, semantic within the active
@@ -13,9 +13,7 @@ export default defineEventHandler(async (event): Promise<PagePaginatedList<PostL
 
   const query = getQuery(event)
   const q = ((query.q as string | undefined) ?? '').trim()
-  const boardId = query.boardId as string | undefined
-  const status = query.status as string | undefined
-  const merged = (query.merged as string) || 'canonical_only'
+  const filter = parsePostFilter(query, orgId)
 
   const db = useDB()
 
@@ -45,10 +43,7 @@ export default defineEventHandler(async (event): Promise<PagePaginatedList<PostL
 
   if (q && embedding) {
     const rows = await searchPostsBySemantic(embedding, {
-      orgId,
-      boardId,
-      status,
-      merged: merged as 'canonical_only' | 'merged_only' | 'all',
+      filter,
       limit: ADMIN_SEARCH_LIMIT,
     })
     return flat(rows)
@@ -57,12 +52,7 @@ export default defineEventHandler(async (event): Promise<PagePaginatedList<PostL
   // Fallback (embeddings unavailable): pg_trgm nearest-N over post_search — whole-string
   // `<->` distance, no text threshold, WITHIN the active filters — matching
   // searchSimilarByTrgm. post_search is sync-maintained on post create/update.
-  const conditions: any[] = [eq(post.orgId, orgId)]
-  if (boardId) conditions.push(eq(post.boardId, boardId))
-  if (status) conditions.push(eq(post.status, status))
-  if (merged === 'canonical_only') conditions.push(isNull(post.mergedTo))
-  else if (merged === 'merged_only') conditions.push(isNotNull(post.mergedTo))
-  const whereClause = and(...conditions)
+  const whereClause = and(...postFilterConditions(filter))
 
   const rows = await db
     .select({

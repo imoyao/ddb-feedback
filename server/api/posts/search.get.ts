@@ -29,8 +29,7 @@ export default defineEventHandler(async (event) => {
   let rows
   if (embedding) {
     rows = await searchPostsBySemantic(embedding, {
-      orgId,
-      merged: 'canonical_only',
+      filter: { orgId, merged: 'canonical_only' },
       limit: PUBLIC_SEARCH_LIMIT,
     })
   }

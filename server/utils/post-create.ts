@@ -32,12 +32,18 @@ export interface CreatedPost {
   contentHash: string
 }
 
-export async function createPostRecord(input: CreatePostInput): Promise<CreatedPost> {
+// tx folds these writes into a caller's transaction — the widget pairs the post
+// with the chat message it came from. Slug lookup stays outside: it only reads,
+// and a real collision is caught by idx_post_org_slug either way.
+export async function createPostRecord(
+  input: CreatePostInput,
+  tx?: Pick<ReturnType<typeof useDB>, 'insert'>,
+): Promise<CreatedPost> {
   const slug = await generateSlug(input.title)
   const excerpt = generateExcerpt(input.content)
   const contentHash = computeContentHash(input.title, input.content)
 
-  const db = useDB()
+  const db = tx ?? useDB()
   const [created] = await db
     .insert(post)
     .values({
