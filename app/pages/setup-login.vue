@@ -6,15 +6,20 @@
 // 本页位于中间件白名单内，可正常渲染并弹出全局 LoginModal；管理员登录成功后
 // 自动跳回 /setup，由 /setup 的轮询以管理员身份调用 /api/_migrate/run 完成迁移。
 const { isOpen } = useLoginModal()
-const { data: session } = useAuthSession()
+const orgCtx = useOrgContext()
 
 // 强制弹出全局登录弹窗（isOpen 是全局 useState，默认布局里的 LoginModal 会随之打开）。
 isOpen.value = true
 
+const isOrgAdmin = computed(() => {
+  const role = orgCtx.value.role
+  return role === 'owner' || role === 'manager'
+})
+
 watch(
-  () => session.value,
-  (s) => {
-    if (s?.user?.role === 'admin') {
+  isOrgAdmin,
+  (admin) => {
+    if (admin) {
       navigateTo('/setup')
     }
   },
@@ -31,7 +36,7 @@ watch(
         系统有待执行的数据库迁移，需管理员登录确认。登录成功后将自动跳转继续。
       </p>
       <p
-        v-if="session?.user && session.user.role !== 'admin'"
+        v-if="orgCtx.role && !isOrgAdmin"
         class="text-sm text-destructive"
       >
         当前账号不是管理员，无法确认更新。

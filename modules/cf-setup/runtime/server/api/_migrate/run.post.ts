@@ -1,5 +1,5 @@
 import { runRuntimeMigration } from '#layers/feedlog/server/utils/runtime-migrate'
-import { getUserSession } from '#layers/feedlog/server/utils/auth'
+import { getOrgMemberRole, getUserSession } from '#layers/feedlog/server/utils/auth'
 import { probeDatabaseState, setCachedState } from '../../utils/migration-state'
 import { resolveConnectionString } from '../../utils/connection-string'
 
@@ -34,8 +34,8 @@ export default defineEventHandler(async (event) => {
   let triggerSource = 'bootstrap'
   if (!isBootstrap) {
     const session = await getUserSession(event).catch(() => null)
-    const role = (session?.user as { role?: string } | undefined)?.role
-    if (role !== 'admin') {
+    const role = getOrgMemberRole(session, event.context.orgId)
+    if (!role || (role !== 'owner' && role !== 'manager')) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Forbidden',
