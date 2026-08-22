@@ -121,6 +121,8 @@ const HTML = `<!doctype html>
   }
   button:hover { background: var(--primary-hover); }
   button:disabled { opacity: 0.5; cursor: default; }
+  .admin-login-link { display: inline-block; margin-top: 20px; color: var(--primary); font-weight: 600; text-decoration: none; font-size: 14px; }
+  .admin-login-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -139,6 +141,7 @@ const HTML = `<!doctype html>
     </div>
 
     <button id="retry-btn" hidden>Try again</button>
+    <a id="admin-login-link" class="admin-login-link" href="/setup-login" hidden>以管理员身份登录</a>
   </main>
 
 <script>
@@ -153,12 +156,13 @@ const HTML = `<!doctype html>
   var errorMessage = document.getElementById('error-message');
   var retryBtn = document.getElementById('retry-btn');
 
-  function showError(title, detail) {
+  function showError(title, detail, showLogin) {
     statusEl.innerHTML = '';
     errorBox.hidden = false;
     document.getElementById('error-title').textContent = title;
     errorMessage.textContent = detail || '';
     retryBtn.hidden = false;
+    if (showLogin) document.getElementById('admin-login-link').hidden = false;
   }
 
   function showSuccess() {
@@ -204,7 +208,7 @@ const HTML = `<!doctype html>
       .catch(function (err) {
         var code = err && err.body && err.body.data && err.body.data.code;
         if (code === 'REQUIRES_ADMIN') {
-          showError('Administrator required', 'This update must be confirmed by an administrator. Please sign in and return to this page.');
+          showError('Administrator required', 'This update must be confirmed by an administrator. Please sign in and return to this page.', true);
         } else {
           var msg = (err && err.body && err.body.message) || (err && err.message) || String(err);
           showError('Setup did not finish', msg);

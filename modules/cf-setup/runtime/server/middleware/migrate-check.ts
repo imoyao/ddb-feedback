@@ -8,6 +8,8 @@ import { resolveState } from '../utils/migration-state'
 // - /api/health: external probes must stay 200 even during setup
 const BYPASS_PREFIXES = [
   '/setup',
+  '/setup-login',
+  '/auth/',
   '/api/_migrate/',
   '/api/auth/',
   '/_nuxt/',
