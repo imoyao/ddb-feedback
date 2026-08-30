@@ -1,6 +1,5 @@
 import OpenAI from 'openai'
 import { asc, eq } from 'drizzle-orm'
-import { getRequestURL } from 'h3'
 import { board, conversation, message, organizationWidget } from '#layers/feedlog/server/db/schemas'
 import { buildWidgetSystemPrompt, historyToMessages, parseWidgetAiResponse, parseWidgetHistory } from '#layers/feedlog/server/utils/widget-ai'
 import { CONVERSATION_TOKEN_BUDGET, estimateTokens, isConversationId, ownedConversation } from '#layers/feedlog/server/utils/conversation'
@@ -31,6 +30,9 @@ interface WidgetMessageResponse {
 
 export default defineEventHandler(async (event): Promise<WidgetMessageResponse> => {
   const { session, orgId } = await requireAuthInOrg(event)
+  // Everything a visitor does in the widget ends in a post, so guest posting is
+  // what decides whether the widget works at all without a sign-in.
+  await assertGuestMay(event, session, 'allowPost')
   const userId = session.user.id
 
   if (!await checkRateLimit(`widget-messages:${userId}`, RATE_LIMIT)) {
@@ -133,7 +135,7 @@ export default defineEventHandler(async (event): Promise<WidgetMessageResponse> 
   // Stored before the model is asked anything: a failed call then leaves an
   // unanswered message, where writing afterwards would lose what they typed.
   const sentAt = new Date()
-  const conversationId = await db.transaction(async (tx) => {
+  const { conversationId, userMessageId } = await db.transaction(async (tx) => {
     let id = requestedId
     if (id) {
       await tx.update(conversation)
@@ -146,13 +148,31 @@ export default defineEventHandler(async (event): Promise<WidgetMessageResponse> 
         .returning({ id: conversation.id })
       id = row!.id
     }
-    await tx.insert(message).values({ conversationId: id, role: 'user', text, images })
-    return id
+    const [userMessage] = await tx.insert(message)
+      .values({ conversationId: id, role: 'user', text, images })
+      .returning({ id: message.id })
+    return { conversationId: id, userMessageId: userMessage!.id }
   })
+
+  // Published only now that the transaction has committed: an event about a
+  // rolled-back row would tell listeners of a fact that does not exist. The
+  // user message id ties together every event of this message's flow.
+  publishDomainEvent(event, createDomainEvent({
+    name: 'widget.message-received',
+    orgId,
+    userId,
+    data: {
+      conversationId,
+      messageId: userMessageId,
+      isNewConversation: !requestedId,
+      attachmentCount: images.length,
+    },
+  }))
 
   // Images are attached to the post but never sent to the model: extraction is
   // text-only for now, so a screenshot-only message is unrecognized by design.
   let parsed: WidgetAiOutput | null = null
+  let resolutionSource: 'model' | 'policy-fallback' = 'model'
   try {
     const client = new OpenAI({ apiKey, baseURL })
     const resp = await client.chat.completions.create({
@@ -177,8 +197,15 @@ export default defineEventHandler(async (event): Promise<WidgetMessageResponse> 
     const code = (err as { code?: string })?.code
     if (status === 400 && code === 'content_filter') {
       parsed = { type: 'unrecognized' }
+      resolutionSource = 'policy-fallback'
     }
     else {
+      publishDomainEvent(event, createDomainEvent({
+        name: 'widget.message-processing-failed',
+        orgId,
+        userId,
+        data: { conversationId, messageId: userMessageId, reason: 'provider-error' },
+      }))
       const detail = err instanceof Error ? err.message : 'Unknown AI error'
       throw createError({ statusCode: 502, message: `AI extraction failed: ${detail}` })
     }
@@ -186,6 +213,12 @@ export default defineEventHandler(async (event): Promise<WidgetMessageResponse> 
 
   // A malformed response is a transient model failure — the SDK may retry.
   if (!parsed) {
+    publishDomainEvent(event, createDomainEvent({
+      name: 'widget.message-processing-failed',
+      orgId,
+      userId,
+      data: { conversationId, messageId: userMessageId, reason: 'invalid-output' },
+    }))
     throw createError({ statusCode: 502, message: 'AI returned an unusable response' })
   }
   const ai = parsed
@@ -250,24 +283,21 @@ export default defineEventHandler(async (event): Promise<WidgetMessageResponse> 
     return post
   })
 
-  // Both of these read committed rows, so they follow the transaction.
+  // Published after the transaction resolves, never inside it — the assistant
+  // row (and the post, when there is one) must exist before listeners are told.
+  publishDomainEvent(event, createDomainEvent({
+    name: 'widget.message-resolved',
+    orgId,
+    userId,
+    data: { conversationId, messageId: userMessageId, outcome: ai.type, resolutionSource },
+  }))
   if (created) {
-    event.waitUntil(
-      generatePostEmbedding(created.id, orgId, created.title, content, created.contentHash),
-    )
-    if (!isActorAdmin(session, orgId)) {
-      event.waitUntil(
-        emitAdminNotification({
-          orgId,
-          typeKey: 'post.created',
-          postSlug: created.slug,
-          postTitle: created.title,
-          snippet: content,
-          actorId: userId,
-          requestOrigin: getRequestURL(event).origin,
-        }).catch((err: unknown) => console.error('[notifications] widget post created emit failed', err)),
-      )
-    }
+    publishDomainEvent(event, createDomainEvent({
+      name: 'feedback.created',
+      orgId,
+      userId,
+      data: { feedbackId: created.id, boardId: created.boardId, source: 'widget', messageId: userMessageId },
+    }))
   }
 
   return {

@@ -42,6 +42,7 @@ function rowTitle(c: WidgetConversationItem): string {
     <div class="flex-1 overflow-y-auto">
       <button
         class="w-full flex items-center gap-3.5 px-5 py-3.5 text-left border-b border-border hover:bg-secondary/55 transition-colors"
+        data-fdl-action="widget_my_feedback_open"
         @click="emit('openFeedback')"
       >
         <span class="w-8.5 h-8.5 shrink-0 inline-flex items-center justify-center text-primary">

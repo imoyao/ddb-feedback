@@ -50,6 +50,8 @@ onUnmounted(() => listObserver?.disconnect())
       <li v-for="item in items" :key="item.id">
         <button
           class="w-full text-left px-3 py-2.5 rounded-md border border-border bg-card hover:border-primary/40 transition-colors group"
+          data-fdl-action="widget_feedback_open"
+          data-fdl-source="list"
           @click="emit('open', item)"
         >
           <div class="flex items-start gap-2">
