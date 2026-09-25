@@ -75,7 +75,7 @@ export function useWidgetEmbed() {
   // self-host a Lax cookie really is sent, so the frame would render whoever is
   // logged into this browser instead of the identity in the token. It also masks
   // revoked sessions, which silently kills the expired-session path.
-  async function widgetFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  async function widgetRequest(path: string, init: RequestInit = {}): Promise<Response> {
     const res = await fetch(path, {
       ...init,
       credentials: 'omit',
@@ -88,14 +88,18 @@ export function useWidgetEmbed() {
       },
     })
     if (!res.ok) {
-      const body = await res.json().catch(() => null) as { message?: string } | null
+      const body = await res.json().catch(() => null) as { message?: string; data?: { code?: string } } | null
       // A plain Error with the status attached: createError() is server-flavoured
       // and this runs only in the browser.
-      const err = new Error(body?.message || `Request failed (${res.status})`) as Error & { statusCode: number }
+      const err = new Error(body?.message || `Request failed (${res.status})`) as Error & { statusCode: number; code?: string }
       err.statusCode = res.status
+      err.code = body?.data?.code
       throw err
     }
-    return await res.json() as T
+    return res
+  }
+  async function widgetFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+    return await (await widgetRequest(path, init)).json() as T
   }
 
   async function claimGuest(anonymousToken: string): Promise<void> {
@@ -186,7 +190,7 @@ export function useWidgetEmbed() {
     return mintInFlight ?? (mintInFlight = mint().finally(() => { mintInFlight = null }))
   }
 
-  return { token, user, status, allowGuest, widgetFetch, loadSession, ensureIdentity }
+  return { token, user, status, allowGuest, widgetFetch, widgetRequest, loadSession, ensureIdentity }
 }
 
 // Refs are per call: a child calling the composable gets an unauthenticated one.

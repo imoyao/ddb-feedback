@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { resolveAttachmentUrl } from '~/utils/attachment'
-import { widgetEmbedKey } from '~/composables/useWidgetEmbed'
-import { widgetProtocolKey } from '~/composables/useWidgetProtocol'
-import type { WidgetFeedbackItem } from '~~/server/api/widget/feedback/index.get'
-import type { WidgetConversationItem } from '~~/server/api/widget/conversations/index.get'
+import { resolveAttachmentUrl } from '#layers/feedlog/app/utils/attachment'
+import { widgetEmbedKey } from '#layers/feedlog/app/composables/useWidgetEmbed'
+import { widgetProtocolKey } from '#layers/feedlog/app/composables/useWidgetProtocol'
+import type { WidgetFeedbackItem } from '#layers/feedlog/server/api/widget/feedback/index.get'
+import type { WidgetConversationItem } from '#layers/feedlog/server/api/widget/conversations/index.get'
 
 // /widget/embed — the FeedLog-hosted page the widget SDK loads in its iframe.
 //
@@ -54,7 +54,8 @@ const orgInitial = computed(() => org.value.name.trim().charAt(0).toUpperCase() 
 const productName = computed(() => org.value.name || t('widget.thisProduct'))
 
 useHead(() => ({
-  htmlAttrs: { class: isDark.value ? 'dark' : '' },
+  htmlAttrs: { class: `overflow-hidden overscroll-none${isDark.value ? ' dark' : ''}` },
+  bodyAttrs: { class: 'overflow-hidden overscroll-none' },
   script: themeParam.value === 'auto'
     ? [{
         key: 'widget-embed-auto-theme',
@@ -74,10 +75,23 @@ function panelVisible() {
   return document.body.getBoundingClientRect().height > 0
 }
 
+function containWheel(event: WheelEvent) {
+  if (event.ctrlKey || !event.deltaY) return
+  // Some browsers ignore overscroll containment when iframe content has no scroll range.
+  for (const node of event.composedPath()) {
+    if (node instanceof HTMLElement) {
+      const { overflowY } = getComputedStyle(node)
+      if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) return
+    }
+    if (node === event.currentTarget) break
+  }
+  event.preventDefault()
+}
+
 const headerTitle = computed(() => {
   if (view.value === 'conversations') return t('widget.messages')
   if (view.value === 'list') return t('widget.myFeedback')
-  return t('widget.agentTitle')
+  return t('widget.agentTitle', { product: productName.value })
 })
 
 async function loadConversations() {
@@ -118,11 +132,12 @@ async function loadUnread() {
   catch { /* keep the last known count */ }
 }
 
-async function markConversationRead(id: string) {
+async function markConversationRead(id: string, lastSeq: number) {
   try {
-    applyBadge(await widgetFetch<BadgeCounts>(`/api/widget/conversations/${id}/read`, { method: 'POST' }))
+    const result = await widgetFetch<BadgeCounts & { cleared: boolean }>(`/api/widget/conversations/${id}/read`, { method: 'POST', body: JSON.stringify({ observed_last_seq: lastSeq }) })
+    applyBadge(result)
     const row = conversations.value.find(c => c.id === id)
-    if (row) row.unread = false
+    if (row && result.cleared) row.unread = false
   }
   catch { /* the dot stays; a later load will correct it */ }
 }
@@ -186,18 +201,20 @@ function onOpenFeedback() {
 function onOpenConversation(id: string) {
   activeConversationId.value = id
   view.value = 'chat'
-  void markConversationRead(id)
 }
 
-function onReplied(id: string) {
+function onReplied(id: string, lastSeq: number) {
+  if (view.value !== 'chat') return
+  activeConversationId.value = id
   if (!panelVisible()) {
     void loadUnread()
     return
   }
-  void markConversationRead(id)
+  void markConversationRead(id, lastSeq)
 }
 
 function onNewConversation() {
+  chatKey.value++
   activeConversationId.value = null
   view.value = 'chat'
 }
@@ -297,7 +314,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col bg-background text-foreground">
+  <div class="relative h-dvh overflow-hidden flex flex-col bg-background text-foreground" @wheel="containWheel">
     <span v-if="probeArmed" class="render-probe" aria-hidden="true" @animationstart="onFirstRender" />
 
     <!-- Header -->
@@ -330,9 +347,7 @@ onUnmounted(() => {
         <p v-if="view === 'list' && totalCount" class="mt-0.5 text-xs text-muted-foreground truncate">
           {{ t('widget.postCount', { count: totalCount }, totalCount) }}<template v-if="feedbackUnread"> · {{ t('widget.withUpdates', { count: feedbackUnread }, feedbackUnread) }}</template>
         </p>
-        <p v-else-if="view === 'chat' && org.name" class="mt-0.5 text-xs text-muted-foreground leading-snug line-clamp-2">
-          {{ t('widget.subtitle', { product: org.name }) }}
-        </p>
+
       </div>
       <button
         class="w-6.5 h-6.5 rounded-full bg-secondary hover:opacity-80 transition-opacity flex items-center justify-center text-primary shrink-0"

@@ -1,6 +1,9 @@
 import { pgTable, uuid, text, varchar, integer, timestamp, index, uniqueIndex, primaryKey, jsonb, customType } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
+import { user, session, account, organization, member, invitation } from './auth'
+
+export { conversationItem, agentRun } from './agent'
 
 // Auth + organization table definitions and relations.
 export {
@@ -33,7 +36,12 @@ export {
   message,
 } from './widget'
 export type { WidgetCustomRule } from './widget'
-import { user, session, account, organization, member, invitation } from './auth'
+export {
+  helpCollection,
+  helpArticle,
+  helpCollectionRelations,
+  helpArticleRelations,
+} from './help'
 
 // Custom type for pgvector's vector column
 const vector = customType<{ data: number[]; driverParam: string }>({
@@ -44,7 +52,7 @@ const vector = customType<{ data: number[]; driverParam: string }>({
     return `[${value.join(',')}]`
   },
   fromDriver(value: string): number[] {
-    return value.replace(/[\[\]]/g, '').split(',').map(Number)
+    return value.replace(/[[\]]/g, '').split(',').map(Number)
   },
 })
 

@@ -1,7 +1,31 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { createResolver } from '@nuxt/kit'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
 
 const resolver = createResolver(import.meta.url)
+const require = createRequire(import.meta.url)
+const mastraPackage = require.resolve('@mastra/core/package.json')
+const mastraRequire = createRequire(mastraPackage)
+const mastraDependencies = JSON.parse(readFileSync(mastraPackage, 'utf8')).dependencies as Record<string, string>
+const mastraTraceInclude: string[] = []
+const mastraTraceAlias: Record<string, string> = {}
+
+// Nitro traces canonical package names; Mastra imports versioned npm aliases.
+for (const [alias, specifier] of Object.entries(mastraDependencies)) {
+  if (!specifier.startsWith('npm:')) continue
+  const entry = mastraRequire.resolve(alias)
+  const packageRoot = resolve(dirname(entry), '..')
+  const pkg = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf8')) as {
+    name: string, version: string, exports?: Record<string, { import?: string }>
+  }
+  mastraTraceInclude.push(entry)
+  const esmEntry = pkg.exports?.['.']?.import
+  if (esmEntry) mastraTraceInclude.push(resolve(packageRoot, esmEntry))
+  mastraTraceAlias[pkg.name] = alias
+  mastraTraceAlias[`.nitro/${pkg.name}@${pkg.version}`] = alias
+}
 
 export default defineNuxtConfig({
   // `$meta.name` makes Nuxt auto-generate a `#layers/feedlog` alias pointing
@@ -155,6 +179,16 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    externals: {
+      traceInclude: mastraTraceInclude,
+      traceAlias: mastraTraceAlias,
+    },
+    // Mastra's hashing dependency ships a native Wasm module for Workers.
+    experimental: { wasm: true },
+    // Workers use pg's JavaScript client; its optional native addon is Node-only.
+    alias: process.env.NITRO_PRESET?.startsWith('cloudflare')
+      ? { 'pg-native': resolver.resolve('./server/lib/agent/pg-native-unavailable.cjs') }
+      : {},
     // Keep CF Workers' native node:fs / path / process available at runtime so
     // the cf-setup module can read bundled migration files via `/bundle/...`.
     // Without this, Nitro's unenv stub shadows them, reads return empty, and

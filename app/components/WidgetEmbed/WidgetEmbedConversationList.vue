@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WidgetConversationItem } from '~~/server/api/widget/conversations/index.get'
+import type { WidgetConversationItem } from '#layers/feedlog/server/api/widget/conversations/index.get'
 
 defineProps<{
   items: WidgetConversationItem[]
@@ -39,7 +39,8 @@ function rowTitle(c: WidgetConversationItem): string {
 
 <template>
   <div class="relative flex-1 min-h-0 flex flex-col bg-card">
-    <div class="flex-1 overflow-y-auto">
+    <!-- Keep the last row above the floating action and its fade. -->
+    <div class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pb-32">
       <button
         class="w-full flex items-center gap-3.5 px-5 py-3.5 text-left border-b border-border hover:bg-secondary/55 transition-colors"
         data-fdl-action="widget_my_feedback_open"

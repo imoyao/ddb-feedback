@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, varchar, jsonb, timestamp, uuid, integer, primaryKey, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, varchar, jsonb, timestamp, uuid, integer, bigint, primaryKey, index, check } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 import { organization } from './auth'
@@ -43,9 +43,12 @@ export const conversation = pgTable('conversation', {
   previewText: text('preview_text'),
   lastMessageAt: timestamp('last_message_at', { withTimezone: true }).notNull().defaultNow(),
   unread: boolean().notNull().default(false),
+  lastSeq: bigint('last_seq', { mode: 'number' }).notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index('idx_conversation_owner').on(t.orgId, t.userId, sql`${t.lastMessageAt} DESC`, sql`${t.id} DESC`),
+  index('idx_conversation_unread').on(t.orgId, t.userId, sql`${t.lastMessageAt} DESC`, sql`${t.id} DESC`).where(sql`${t.unread} = true AND ${t.lastSeq} > 0`),
+  check('conversation_last_seq', sql`${t.lastSeq} >= 0`),
 ])
 
 // Both sides of a conversation, in the order they happened.

@@ -222,7 +222,7 @@ use Nuxt public runtime env naming.
 
 ## AI features
 
-Similar-idea detection and AI-drafted changelog entries both call an
+The Widget Agent, similar-idea detection, and AI-drafted changelog entries call an
 OpenAI-compatible HTTP API. Leave these unset to disable AI features
 entirely — the rest of the app works without them.
 
@@ -241,9 +241,19 @@ Base URL of the OpenAI-compatible endpoint. Examples:
 
 ### `OPENAI_TEXT_MODEL` &nbsp;⬜ optional
 
-Chat model used for AI changelog drafting. Defaults to a current OpenAI
-model; set explicitly when targeting Azure deployments or non-OpenAI
-providers where the model id differs.
+Model used for Widget Agent conversations and AI changelog drafting.
+The Widget Agent requires an explicit model name and API key; without either,
+sending a message returns HTTP 503. Choose an OpenAI-compatible chat model
+with tool calling and, for image attachments, image input support.
+
+Articles with AI Usage enabled are available to the agent independently of
+publication and collection visibility. Customer-facing article references require
+a published article in a visible collection and the public Help Center enabled.
+
+The Widget SDK declares host-page context support through `init` with
+`capabilities.pageContext: true`. Without this capability, the Widget skips
+context collection immediately. Supported hosts have a 500 ms response timeout;
+missing context does not prevent sending a message.
 
 ---
 

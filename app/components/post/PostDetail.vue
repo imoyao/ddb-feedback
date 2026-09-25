@@ -128,7 +128,9 @@ async function handleDeletePost() {
     await store.deletePost(props.slug)
     emit('deleted', postId)
   } catch (e: any) {
-    editError.value = e.data?.message || t('post.detail.errors.deleteFailed')
+    // Not editError: that line only renders inside the edit form, so a delete
+    // failure there was indistinguishable from the button doing nothing.
+    toast.error(e.data?.message || t('post.detail.errors.deleteFailed'))
   } finally {
     deleting.value = false
   }
@@ -314,7 +316,14 @@ function handleEditCommentCancel() {
 }
 
 async function handleDeleteComment(commentId: string) {
-  await store.deleteComment(props.slug, commentId)
+  try {
+    await store.deleteComment(props.slug, commentId)
+  }
+  catch (e: any) {
+    // Uncaught, this rejected into nowhere and the comment silently stayed put.
+    toast.error(e.data?.message || t('post.detail.errors.deleteFailed'))
+    return
+  }
   emitCommentCount()
 }
 

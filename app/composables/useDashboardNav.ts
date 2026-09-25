@@ -21,6 +21,7 @@ export function useDashboardNav(): DashboardNav {
       { label: t('nav.feedback'),  to: '/dashboard/feedback',  icon: 'lucide:message-square' },
       { label: t('nav.roadmap'),   to: '/dashboard/roadmap',   icon: 'lucide:map' },
       { label: t('nav.changelog'), to: '/dashboard/changelog', icon: 'lucide:newspaper' },
+      { label: t('nav.helpCenter'), to: '/dashboard/help', icon: 'lucide:book-open' },
     ]),
     settingsNav: computed(() => [
       { label: t('nav.board'),     to: '/dashboard/boards',              icon: 'lucide:settings-2' },

@@ -1,6 +1,7 @@
 import { createAuthClient } from 'better-auth/vue'
 import { adminClient, customSessionClient, organizationClient } from 'better-auth/client/plugins'
 import { ac, contributor, manager, owner } from '~~/shared/auth/permissions'
+import { promptLocalAuthIfRequired } from '~/composables/useLoginModal'
 import type { auth } from '~~/server/utils/better-auth'
 
 // Mirror server plugins so client-side helpers (checkRolePermission, etc.)
@@ -13,4 +14,12 @@ export const authClient = createAuthClient({
     organizationClient({ ac, roles: { owner, manager, contributor } }),
     customSessionClient<typeof auth>(),
   ],
+  fetchOptions: {
+    // Settings pages call better-auth directly, so refusals surface here rather
+    // than through useApiFetch. Read `error`, not `response`: better-fetch hands
+    // back a plain web Response and spreads the parsed body onto `error`.
+    onError(ctx) {
+      promptLocalAuthIfRequired(ctx.error)
+    },
+  },
 })

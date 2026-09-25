@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { authClient } from '~/lib/auth-client'
 import { mergeBrandingMetadata, type OrgMetadataInput, parseBranding } from '#layers/feedlog/shared/utils/branding'
+import { mergePortalModulesMetadata, resolvePortalModules } from '#layers/feedlog/shared/utils/portal-modules'
 
 definePageMeta({ layout: 'dashboard', middleware: ['admin'] })
 
@@ -25,6 +26,25 @@ const form = reactive({
   welcomeTitle: '',
   welcomeDescription: '',
 })
+
+const { data: helpStats } = await useFetch<{ collectionCount: number; articleCount: number }>('/api/admin/help/stats')
+const helpCenterAvailable = computed(() => (helpStats.value?.collectionCount ?? 0) > 0)
+const helpCenterOn = computed({
+  get: () => resolvePortalModules(org.value?.metadata).helpCenter,
+  set: value => void toggleHelpCenter(value),
+})
+
+async function toggleHelpCenter(value: boolean) {
+  if (!org.value) return
+  const metadata = mergePortalModulesMetadata(org.value.metadata, { helpCenter: value })
+  try {
+    await authClient.organization.update({ organizationId: org.value.id, data: { metadata } })
+    await loadOrg()
+  }
+  catch {
+    error.value = t('settings.portal.saveFailed')
+  }
+}
 
 const toolbars = ['bold', 'italic', 'strikeThrough', '-', 'title', 'unorderedList', 'orderedList', '-', 'link', 'code', 'codeRow']
 
@@ -103,7 +123,23 @@ async function save() {
           <p class="text-sm text-muted-foreground">{{ $t('settings.loading') }}</p>
         </template>
 
-        <section v-else-if="org" class="rounded-xl border border-border bg-card overflow-hidden">
+        <section v-if="!loading && org" class="rounded-xl border border-border bg-card overflow-hidden">
+          <div class="px-6 py-5 border-b border-border">
+            <h3 class="font-heading font-bold text-sm">{{ $t('settings.portal.modulesSection') }}</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">{{ $t('settings.portal.modulesDesc') }}</p>
+          </div>
+          <div class="flex items-center gap-4 px-6 py-[18px]">
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-bold leading-5">{{ $t('settings.portal.moduleHelpCenter') }}</span>
+              <span class="block mt-[3px] text-xs leading-4 text-muted-foreground">
+                {{ helpCenterAvailable ? $t('settings.portal.moduleHelpCenterOn') : $t('settings.portal.moduleHelpCenterEmpty') }}
+              </span>
+            </span>
+            <Switch v-model="helpCenterOn" :disabled="!helpCenterAvailable" />
+          </div>
+        </section>
+
+        <section v-if="!loading && org" class="rounded-xl border border-border bg-card overflow-hidden">
           <div class="px-6 py-5 border-b border-border">
             <h3 class="font-heading font-bold text-sm">{{ $t('settings.portal.welcomeSection') }}</h3>
             <p class="text-xs text-muted-foreground mt-0.5">{{ $t('settings.portal.welcomeDesc') }}</p>

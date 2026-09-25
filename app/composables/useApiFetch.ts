@@ -20,8 +20,17 @@ export function useApiFetch<T>(url: string, opts?: Parameters<typeof $fetch>[1])
     }
   }
 
+  // ofetch types this hook as MaybeArray; normalise before chaining.
+  const callerHooks = [opts?.onResponseError].flat().filter(h => typeof h === 'function')
+
   return $fetch<T>(url, {
     ...opts,
     headers: { ...headers, ...opts?.headers },
+    // Central catch so deep links and stale tabs get the prompt too. The call
+    // still rejects, so callers keep their own failure handling.
+    async onResponseError(ctx) {
+      promptLocalAuthIfRequired(ctx.response?._data)
+      for (const hook of callerHooks) await (hook as (c: typeof ctx) => unknown)(ctx)
+    },
   })
 }
