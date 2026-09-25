@@ -33,6 +33,31 @@ jobs:
       - name: Build (Node server)
         run: pnpm build
 
+  cf-build:
+    # Cloudflare Workers preset has no local/CI guard otherwise; this catches
+    # preset-specific breakage (wasm, traceInclude, pg-native alias) before
+    # the CF build fails on deploy.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (CF Workers)
+        run: pnpm build:cf
+
   docker-build:
     runs-on: ubuntu-latest
 
