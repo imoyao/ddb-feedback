@@ -186,9 +186,12 @@ export default defineNuxtConfig({
     // Mastra's hashing dependency ships a native Wasm module for Workers.
     experimental: { wasm: true },
     // Workers use pg's JavaScript client; its optional native addon is Node-only.
-    alias: process.env.NITRO_PRESET?.startsWith('cloudflare')
-      ? { 'pg-native': resolver.resolve('./server/lib/agent/pg-native-unavailable.cjs') }
-      : {},
+    // The alias must be UNCONDITIONAL: on CF Workers Builds NITRO_PRESET is not
+    // set as an env var when this config is evaluated (@nuxthub/core resolves
+    // the preset at a later hook), so gating it on the env var silently skips
+    // it there and the build dies on "Cannot resolve pg-native". The stub is
+    // inert: pg's lazy `native` getter never instantiates it.
+    alias: { 'pg-native': resolver.resolve('./server/lib/agent/pg-native-unavailable.cjs') },
     // Keep CF Workers' native node:fs / path / process available at runtime so
     // the cf-setup module can read bundled migration files via `/bundle/...`.
     // Without this, Nitro's unenv stub shadows them, reads return empty, and
