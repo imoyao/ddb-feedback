@@ -121,7 +121,7 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
     baseUrl: 'https://feedback.duoduobei.com',
     vueI18n: 'i18n.config.ts',
-    langDir: 'i18n/locales',
+    langDir: 'locales',
     detectBrowserLanguage: {
       useCookie: true,
       cookieKey: 'feedlog_locale',
